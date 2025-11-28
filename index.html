@@ -1,0 +1,436 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Character Recognition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #e0f2fe 0%, #e0e7ff 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .drawing-canvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+        
+        .bar-chart {
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen py-8">
+    <div class="max-w-6xl mx-auto px-4">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-indigo-800 mb-2"> Character Recognition</h1>
+            <p class="text-lg text-indigo-600">Draw a character or upload an image to classify with a neural network</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Left Column: Drawing & Controls -->
+            <div class="space-y-6">
+                <!-- Drawing Canvas -->
+                <div class="glass-effect rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Drawing Canvas</h2>
+                    <div class="flex justify-center">
+                        <canvas id="drawingCanvas" width="280" height="280" 
+                                class="drawing-canvas bg-black rounded-lg border-2 border-gray-300"></canvas>
+                    </div>
+                    <div class="flex justify-center mt-4 space-x-4">
+                        <button id="clearBtn" class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition">
+                            Clear Canvas
+                        </button>
+                        <button id="predictBtn" disabled 
+                                class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            Predict Character
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upload Model -->
+                <div class="glass-effect rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Load Neural Network</h2>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload Model Parameters</label>
+                        <input type="file" id="modelUpload" accept=".json" 
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Or Upload Character Image</label>
+                        <input type="file" id="imageUpload" accept="image/*" 
+                               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    </div>
+                    <div id="modelInfo" class="mt-4 hidden">
+                        <h3 class="font-medium text-gray-800 mb-2">Model Architecture</h3>
+                        <div class="text-sm text-gray-600 bg-indigo-50 p-3 rounded-lg">
+                            <div id="modelDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="space-y-6">
+                <!-- Prediction Results -->
+                <div class="glass-effect rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Prediction Results</h2>
+                    
+                    <!-- Top Prediction -->
+                    <div id="topPrediction" class="hidden mb-6 p-4 bg-white rounded-xl shadow-sm border border-gray-200">
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Top Prediction</h3>
+                        <div class="flex items-center space-x-4">
+                            <div id="predictedChar" class="text-5xl font-bold text-indigo-700 w-16 h-16 flex items-center justify-center border-2 border-indigo-300 rounded-lg"></div>
+                            <div>
+                                <div id="predictionLabel" class="text-lg font-medium text-gray-800"></div>
+                                <div id="confidence" class="text-sm text-gray-600"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top 5 Predictions -->
+                    <div id="topPredictions" class="hidden">
+                        <h3 class="text-lg font-medium text-gray-700 mb-3">Top 5 Predictions</h3>
+                        <div id="predictionsList" class="space-y-3"></div>
+                    </div>
+
+                    <!-- No Results Message -->
+                    <div id="noResults" class="text-center py-8 text-gray-500">
+                        <p>Load a model and draw or upload a character to see predictions</p>
+                    </div>
+                </div>
+
+                <!-- Instructions -->
+                <div class="glass-effect rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">How to Use</h2>
+                    <ol class="list-decimal pl-5 space-y-2 text-gray-600">
+                        <li>Upload a model_params.json file with trained weights</li>
+                        <li>Draw a character on the canvas or upload an image</li>
+                        <li>Click "Predict Character" to see the neural network's classification</li>
+                        <li>Results will show the predicted character and confidence levels</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('drawingCanvas');
+        const ctx = canvas.getContext('2d');
+        const clearBtn = document.getElementById('clearBtn');
+        const predictBtn = document.getElementById('predictBtn');
+        const modelUpload = document.getElementById('modelUpload');
+        const imageUpload = document.getElementById('imageUpload');
+        const modelInfo = document.getElementById('modelInfo');
+        const modelDetails = document.getElementById('modelDetails');
+        const topPrediction = document.getElementById('topPrediction');
+        const topPredictions = document.getElementById('topPredictions');
+        const predictionsList = document.getElementById('predictionsList');
+        const noResults = document.getElementById('noResults');
+        const predictedChar = document.getElementById('predictedChar');
+        const predictionLabel = document.getElementById('predictionLabel');
+        const confidence = document.getElementById('confidence');
+
+        // Drawing state
+        let isDrawing = false;
+        let model = null;
+        
+        // Initialize canvas
+        function initCanvas() {
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.lineWidth = 15;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = 'white';
+        }
+        
+        // Drawing functions
+        function startDrawing(e) {
+            isDrawing = true;
+            draw(e);
+        }
+        
+        function stopDrawing() {
+            isDrawing = false;
+            ctx.beginPath();
+        }
+        
+        function draw(e) {
+            if (!isDrawing) return;
+            
+            let x, y;
+            if (e.type.includes('touch')) {
+                x = e.touches[0].clientX - canvas.getBoundingClientRect().left;
+                y = e.touches[0].clientY - canvas.getBoundingClientRect().top;
+            } else {
+                x = e.offsetX;
+                y = e.offsetY;
+            }
+            
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+        
+        canvas.addEventListener('mousedown', startDrawing);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDrawing);
+        canvas.addEventListener('mouseout', stopDrawing);
+        canvas.addEventListener('touchstart', startDrawing);
+        canvas.addEventListener('touchmove', draw);
+        canvas.addEventListener('touchend', stopDrawing);
+        
+        clearBtn.addEventListener('click', initCanvas);
+        
+        // Model loading
+        modelUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const modelParams = JSON.parse(event.target.result);
+                    model = modelParams;
+                    predictBtn.disabled = false;
+                    modelInfo.classList.remove('hidden');
+                    
+                    const inputSize = model.w1[0].length;
+                    const hidden1Size = model.w1.length;
+                    const hidden2Size = model.w2.length;
+                    const hidden3Size = model.w3.length;
+                    const outputSize = model.w4.length;
+                    
+                    modelDetails.innerHTML = `
+                        <div>Input Size: ${inputSize} (28×28 pixels)</div>
+                        <div>Hidden Layer 1: ${hidden1Size} neurons</div>
+                        <div>Hidden Layer 2: ${hidden2Size} neurons</div>
+                        <div>Hidden Layer 3: ${hidden3Size} neurons</div>
+                        <div>Output Size: ${outputSize} (62 classes)</div>
+                    `;
+                    
+                    showMessage('Model loaded successfully!', 'success');
+                } catch (error) {
+                    showMessage('Error loading model: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        });
+        
+        // Image upload
+        imageUpload.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    initCanvas();
+                    const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+                    const x = (canvas.width - img.width * scale) / 2;
+                    const y = (canvas.height - img.height * scale) / 2;
+                    ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // ===== UPDATED PREPROCESSING FUNCTION =====
+        function preprocessImage() {
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = 28;
+            tempCanvas.height = 28;
+            
+            // Scale down to 28x28
+            tempCtx.drawImage(canvas, 0, 0, 28, 28);
+            
+            // Get image data
+            const imageData = tempCtx.getImageData(0, 0, 28, 28);
+            const data = imageData.data;
+            
+            // STEP 1: Convert to 2D grayscale array (28x28)
+            const image2D = [];
+            for (let y = 0; y < 28; y++) {
+                const row = [];
+                for (let x = 0; x < 28; x++) {
+                    const idx = (y * 28 + x) * 4;
+                    const gray = (0.299 * data[idx] + 0.587 * data[idx+1] + 0.114 * data[idx+2]) / 255;
+                    row.push(gray);
+                }
+                image2D.push(row);
+            }
+            
+            // STEP 2: Transpose while flattening (EMNIST format)
+            // Read column-by-column instead of row-by-row
+            const processed = [];
+            for (let x = 0; x < 28; x++) {
+                for (let y = 0; y < 28; y++) {
+                    processed.push(image2D[y][x]);
+                }
+            }
+            
+            return processed;
+        }
+        
+        // ===== UPDATED NEURAL NETWORK FUNCTIONS =====
+        function relu(x) {
+            return Math.max(0, x);
+        }
+        
+        function softmax(arr) {
+            const maxVal = Math.max(...arr);
+            const exps = arr.map(x => Math.exp(x - maxVal));
+            const sumExps = exps.reduce((a, b) => a + b, 0);
+            return exps.map(x => x / sumExps);
+        }
+        
+        function matrixMultiply(weights, input) {
+            const result = [];
+            for (let i = 0; i < weights.length; i++) {
+                let sum = 0;
+                for (let j = 0; j < weights[i].length; j++) {
+                    sum += weights[i][j] * input[j];
+                }
+                result.push(sum);
+            }
+            return result;
+        }
+        
+        function addBias(arr, bias) {
+            return arr.map((val, i) => val + bias[i][0]);
+        }
+        
+        function applyActivation(arr, activation) {
+            if (activation === 'relu') {
+                return arr.map(x => relu(x));
+            } else if (activation === 'softmax') {
+                return softmax(arr);
+            }
+            return arr;
+        }
+        
+        function forwardPropagation(input) {
+            if (!model) {
+                throw new Error('No model loaded');
+            }
+            
+            let layer1 = matrixMultiply(model.w1, input);
+            layer1 = addBias(layer1, model.b1);
+            layer1 = applyActivation(layer1, 'relu');
+            
+            let layer2 = matrixMultiply(model.w2, layer1);
+            layer2 = addBias(layer2, model.b2);
+            layer2 = applyActivation(layer2, 'relu');
+            
+            let layer3 = matrixMultiply(model.w3, layer2);
+            layer3 = addBias(layer3, model.b3);
+            layer3 = applyActivation(layer3, 'relu');
+            
+            let output = matrixMultiply(model.w4, layer3);
+            output = addBias(output, model.b4);
+            output = applyActivation(output, 'softmax');
+            
+            return output;
+        }
+        
+        function getCharacterFromIndex(index) {
+            if (index >= 0 && index <= 9) {
+                return { char: index.toString(), type: 'Digit' };
+            } else if (index >= 10 && index <= 35) {
+                return { char: String.fromCharCode(index - 10 + 65), type: 'Uppercase' };
+            } else if (index >= 36 && index <= 61) {
+                return { char: String.fromCharCode(index - 36 + 97), type: 'Lowercase' };
+            }
+            return { char: '?', type: 'Unknown' };
+        }
+        
+        predictBtn.addEventListener('click', function() {
+            if (!model) {
+                showMessage('Please load a model first', 'error');
+                return;
+            }
+            
+            try {
+                const processedInput = preprocessImage();
+                const output = forwardPropagation(processedInput);
+                
+                const predictions = output.map((prob, index) => ({
+                    index,
+                    probability: prob,
+                    ...getCharacterFromIndex(index)
+                }));
+                
+                predictions.sort((a, b) => b.probability - a.probability);
+                displayPredictions(predictions.slice(0, 5));
+                
+            } catch (error) {
+                showMessage('Prediction error: ' + error.message, 'error');
+            }
+        });
+        
+        function displayPredictions(predictions) {
+            noResults.classList.add('hidden');
+            
+            const top = predictions[0];
+            predictedChar.textContent = top.char;
+            predictionLabel.textContent = `${top.type} (${top.char})`;
+            confidence.textContent = `Confidence: ${(top.probability * 100).toFixed(2)}%`;
+            topPrediction.classList.remove('hidden');
+            
+            predictionsList.innerHTML = '';
+            predictions.forEach(pred => {
+                const barWidth = (pred.probability * 100).toFixed(1);
+                const predictionElement = document.createElement('div');
+                predictionElement.className = 'flex items-center space-x-3';
+                predictionElement.innerHTML = `
+                    <div class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md font-medium">
+                        ${pred.char}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span>${pred.type} (${pred.char})</span>
+                            <span>${(pred.probability * 100).toFixed(2)}%</span>
+                        </div>
+                        <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                            <div class="h-full bg-indigo-500 bar-chart" style="width: ${barWidth}%"></div>
+                        </div>
+                    </div>
+                `;
+                predictionsList.appendChild(predictionElement);
+            });
+            
+            topPredictions.classList.remove('hidden');
+        }
+        
+        function showMessage(message, type) {
+            const toast = document.createElement('div');
+            toast.className = `fixed top-4 right-4 px-4 py-2 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+            }`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => document.body.removeChild(toast), 3000);
+        }
+        
+        initCanvas();
+    </script>
+</body>
+</html>
