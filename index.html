@@ -237,7 +237,7 @@
         // Auto-load model on page load
         window.addEventListener('DOMContentLoaded', async function() {
             try {
-                const response = await fetch('model_params.json');
+                const response = await fetch('model_params3.json');
                 const modelParams = await response.json();
                 model = modelParams;
                 predictBtn.disabled = false;
@@ -467,4 +467,5 @@
 </body>
 
 </html>
+
 
