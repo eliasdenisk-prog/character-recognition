@@ -197,35 +197,7 @@
         
         clearBtn.addEventListener('click', initCanvas);
 
-        // Auto-load model on page load
-        window.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const response = await fetch('model_params.json');
-                const modelParams = await response.json();
-                model = modelParams;
-                predictBtn.disabled = false;
-                modelInfo.classList.remove('hidden');
-        
-               // Display model architecture
-               const inputSize = model.w1[0].length;
-               const hidden1Size = model.w1.length;
-               const hidden2Size = model.w2.length;
-               const hidden3Size = model.w3.length;
-               const outputSize = model.w4.length;
-        
-                modelDetails.innerHTML = `
-                   <div>Input Size: ${inputSize} (28×28 pixels)</div>
-                   <div>Hidden Layer 1: ${hidden1Size} neurons</div>
-                   <div>Hidden Layer 2: ${hidden2Size} neurons</div>
-                   <div>Hidden Layer 3: ${hidden3Size} neurons</div>
-                   <div>Output Size: ${outputSize} (62 classes)</div>
-               `;
-        
-                showMessage('Model loaded successfully!', 'success');
-             } catch (error) {
-                 console.error('Error loading model:', error);
-            }
-         });
+       
        
         // Model loading
         modelUpload.addEventListener('change', function(e) {
@@ -260,6 +232,36 @@
                 }
             };
             reader.readAsText(file);
+        });
+
+        // Auto-load model on page load
+        window.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('model_params.json');
+                const modelParams = await response.json();
+                model = modelParams;
+                predictBtn.disabled = false;
+                modelInfo.classList.remove('hidden');
+                
+                const inputSize = model.w1[0].length;
+                const hidden1Size = model.w1.length;
+                const hidden2Size = model.w2.length;
+                const hidden3Size = model.w3.length;
+                const outputSize = model.w4.length;
+                
+                modelDetails.innerHTML = `
+                    <div>Input Size: ${inputSize} (28×28 pixels)</div>
+                    <div>Hidden Layer 1: ${hidden1Size} neurons</div>
+                    <div>Hidden Layer 2: ${hidden2Size} neurons</div>
+                    <div>Hidden Layer 3: ${hidden3Size} neurons</div>
+                    <div>Output Size: ${outputSize} (62 classes)</div>
+                `;
+                
+                showMessage('Model loaded successfully!', 'success');
+            } catch (error) {
+                console.error('Error loading model:', error);
+                showMessage('Model will need to be loaded manually', 'error');
+            }
         });
         
         // Image upload
@@ -465,3 +467,4 @@
 </body>
 
 </html>
+
