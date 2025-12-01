@@ -283,8 +283,7 @@
             };
             reader.readAsDataURL(file);
         });
-        
-        // ===== UPDATED PREPROCESSING FUNCTION =====
+     
         function preprocessImage() {
             const tempCanvas = document.createElement('canvas');
             const tempCtx = tempCanvas.getContext('2d');
@@ -322,7 +321,7 @@
             return processed;
         }
         
-        // ===== UPDATED NEURAL NETWORK FUNCTIONS =====
+        
         function relu(x) {
             return Math.max(0, x);
         }
@@ -467,5 +466,6 @@
 </body>
 
 </html>
+
 
 
